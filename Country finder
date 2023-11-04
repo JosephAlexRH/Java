@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        table, tr, th, td{
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        th{
+            padding: 10px;
+        }
+        tr:nth-child(even){
+            background-color: lightskyblue;
+        }
+        div{
+            padding: 10px;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            //Main table pointer
+            let table;
+            //Contains the original information from the table not altered by Search function
+            let originalData = [];
+            // Keeps track of number of countries displayed
+            let countryCount=0;
+            //Select box pointer
+            const selectBox = $("#selectBox");
+            //JSON data url
+            const selectURL = "https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/regions";
+            //Variable to store JSON data
+            const jsonDataElement=$('#json-data');
+            //table body pointer
+            const tableBody=$('#data-table tbody');
+            //Selected region
+            let selectRegion="";
+            $.getJSON(selectURL, function(data){
+                $.each(data, function(index, item){
+                    selectBox.append($("<option>", {
+                        value: item,
+                        text: item
+                    }));
+                });
+            })
+                .fail(function (jqXHR, textStatus, errorThrown){
+                    console.error("JSON error select box populating: " + errorThrown);
+                });
+
+            selectBox.on("change", function(){
+                countryCount=0;
+                const selectedRegion=$(this).val();
+                selectRegion=selectedRegion;
+                if (selectedRegion===""){
+                    tableBody.empty();
+                    jsonDataElement.empty();
+                }else{
+                    populateTable(selectedRegion);
+                }
+            });
+
+            function populateTable(selectedRegion){
+                const regionURL='https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/'+selectedRegion;
+                $.getJSON(regionURL, function (data){
+                    tableBody.empty();
+                    originalData = data;
+                    data.forEach(function (item){
+                        const row=$('<tr>');
+                        row.append($('<td>').text(item.code));
+                        row.append($('<td>').html(`<img src="${item.flag}" alt="${item.name}" width="45px" height="30px">`));
+                        row.append($('<td>').text(item.name));
+                        row.append($('<td>').text(item.capital));
+                        row.append($('<td>').text(item.population));
+                        row.append($('<td>').text(item.area));
+                        row.append($('<td>').text(Math.round(10*(item.population / item.area))/10));
+                        tableBody.append(row);
+                        countryCount++;
+                        $('#numCountries').text(countryCount);
+                    });
+                    $('#largestCountry').text(findLargest(5));
+                    $('#mostPopulated').text(findLargest(4));
+                })
+            }
+            function findLargest(index){
+                let largest=0;
+                let largestCountry='';
+                const rows=table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+                for(let i=0;i<rows.length;i++){
+                    const areaData=rows[i].getElementsByTagName('td')[index];
+                    const areaValue=parseFloat(areaData.textContent);
+                    if(areaValue>largest){
+                        largest=areaValue;
+                        largestCountry=rows[i].getElementsByTagName('td')[2].textContent;
+                    }
+                }
+                return largestCountry;
+            }
+            $('#searchButton').click(function (){
+                const key = document.getElementById("inputBox").value.toLowerCase();
+                tableBody.empty();
+                originalData.forEach(function (item) {
+                    const countryName = item.name.toLowerCase();
+                    const capitalName = item.capital.toLowerCase();
+                    if (countryName.includes(key) || capitalName.includes(key)) {
+                        const row = $('<tr>');
+                        row.append($('<td>').text(item.code));
+                        row.append($('<td>').html(`<img src="${item.flag}" alt="${item.name}" width="45px" height="30px">`));
+                        row.append($('<td>').text(item.name));
+                        row.append($('<td>').text(item.capital));
+                        row.append($('<td>').text(item.population));
+                        row.append($('<td>').text(item.area));
+                        row.append($('<td>').text(Math.round(10*(item.population / item.area))/10));
+                        tableBody.append(row);
+                        countryCount++;
+                        $('#numCountries').text(countryCount);
+                    }
+                });
+                $('#largestCountry').text(findLargest(5));
+                $('#mostPopulated').text(findLargest(4));
+            })
+            table=document.getElementById('data-table');
+        });
+    </script>
+</head>
+<body>
+<h1> Assignment 1 Web Development</h1>
+<div>
+    <label for="selectBox">Select Region: </label>
+    <select id="selectBox">
+        <option value="" disabled selected >Region</option>
+    </select>
+</div>
+<div>
+    <form>
+        <button type="button" id="searchButton">Search</button>
+        <label for="inputBox"></label>
+        <input type="text" id="inputBox">
+    </form>
+</div>
+<div>
+    <div>
+        Total Number of Countries:
+        <label id="numCountries">0</label>
+    </div>
+    <div>
+        Largest Country:
+        <label id="largestCountry"></label>
+    </div>
+    <div>
+        Most Populated Country
+        <label id="mostPopulated"></label>
+    </div>
+</div>
+<div>
+    <table id="data-table">
+        <thead>
+        <tr>
+            <th> Country Code </th>
+            <th> Flag </th>
+            <th> Name </th>
+            <th> Capital </th>
+            <th> Population </th>
+            <th> Area </th>
+            <th> Population density </th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
